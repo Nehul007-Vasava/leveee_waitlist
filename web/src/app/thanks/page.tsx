@@ -16,7 +16,9 @@ export default function ThanksPage() {
         <ThanksView />
       </main>
       <div className="mt-28">
-        <Footer note="Questions? Reply to your confirmation email." />
+        {/* Note hidden until confirmation emails are actually sent:
+            <Footer note="Questions? Reply to your confirmation email." /> */}
+        <Footer />
       </div>
     </>
   );

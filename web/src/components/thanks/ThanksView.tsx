@@ -50,9 +50,11 @@ export function ThanksView() {
       <motion.h1 {...fade(0)} className="text-[40px] leading-[1.06] font-semibold tracking-[-0.03em] text-ink md:text-[56px]">
         {signup ? `Thank you, ${signup.name}. You're on the list.` : "You're on the list."}
       </motion.h1>
+      {/* Hidden until confirmation emails are actually sent.
       <motion.p {...fade(0.05)} className="mt-3 text-[17px] text-body">
         We&apos;ve sent a confirmation to your inbox.
       </motion.p>
+      */}
 
       {/* validation first, before anything else */}
       <motion.div {...fade(0.15)} className="mt-10 flex items-end gap-3">
