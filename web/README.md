@@ -31,9 +31,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-1. Import the GitHub repo in Vercel and set **Root Directory** to `web` (framework auto-detects as Next.js).
-2. In the project's **Storage** tab, add **Upstash Redis** (Marketplace) and connect it. This injects
-   `KV_REST_API_URL` and `KV_REST_API_TOKEN`, which the waitlist API uses to store signups.
-   Without it, signups fail in production (Vercel's filesystem is read-only).
-3. Optional: set `NEXT_PUBLIC_FOUNDER_CALL_URL` and `NEXT_PUBLIC_HELPLINE_URL`. See `.env.example`.
-4. Deploy. Locally, with no Redis env set, signups go to `.data/waitlist.json`.
+1. **Create the database.** In a Supabase project, open **SQL Editor** and run
+   `supabase/migrations/20261015000000_create_waitlist.sql` (or `supabase db push` with the CLI).
+   It creates the `waitlist` table with row-level security on and no public access.
+2. **Import the repo in Vercel** and set **Root Directory** to `web`.
+3. **Set environment variables** (Production and Preview):
+   - `SUPABASE_URL`: Project Settings → Data API
+   - `SUPABASE_SECRET_KEY`: Project Settings → API Keys → secret key (`sb_secret_...`).
+     The legacy `SUPABASE_SERVICE_ROLE_KEY` also works. Keep it server-only: never `NEXT_PUBLIC_`.
+   - Optional: `NEXT_PUBLIC_FOUNDER_CALL_URL`, `NEXT_PUBLIC_HELPLINE_URL`. See `.env.example`.
+4. **Deploy.** Without the Supabase variables, signups fail on Vercel with a visible error.
+
+Signups show up in Supabase → **Table Editor → waitlist**, where you can filter and export to CSV.
+`position` (place in line) is the row's rank by `seq`. Locally, with no Supabase variables set,
+signups go to `.data/waitlist.json`.

@@ -1,89 +1,89 @@
+import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /*
   Waitlist storage.
-  Production (Vercel): Upstash Redis over its REST API. Add the Upstash integration from the
-  Vercel Marketplace and it injects KV_REST_API_URL / KV_REST_API_TOKEN (UPSTASH_REDIS_REST_* also work).
-  Local dev: falls back to .data/waitlist.json when no Redis env is set.
-  Serverless hosts have a read-only, ephemeral FS, so the file fallback is refused in production.
+  Production: Supabase Postgres (schema in supabase/migrations). Needs SUPABASE_URL plus a server-side
+  key: SUPABASE_SECRET_KEY (sb_secret_...) or the legacy SUPABASE_SERVICE_ROLE_KEY. Never expose either
+  to the browser (no NEXT_PUBLIC_ prefix).
+  Local dev: falls back to .data/waitlist.json when Supabase isn't configured. The fallback is refused
+  on Vercel, whose filesystem is read-only.
 */
 
-export type Entry = {
-  id: string;
-  ref: string;
-  createdAt: string;
+export type JoinInput = {
   name: string;
   email: string;
+  ref: string;
   pain: string | null;
   other?: string;
-  together?: string;
-  partnerOpen?: string;
-  loop?: string[];
   referredBy?: string;
 };
 
-type AddResult = { entry: Entry; position: number; returning: boolean };
+export type JoinResult = { id: string; ref: string; position: number; returning: boolean };
+
+export type FollowUp = { together?: string; partnerOpen?: string; loop?: string[] };
 
 type Store = {
-  add(entry: Entry): Promise<AddResult>;
-  get(id: string): Promise<Entry | null>;
-  save(entry: Entry): Promise<void>;
+  join(input: JoinInput): Promise<JoinResult>;
+  /** Returns false when no signup has this id. */
+  update(id: string, fields: FollowUp): Promise<boolean>;
 };
 
-/* ---------- Upstash Redis ---------- */
+/** Thrown when the generated referral code is already taken; the caller retries with a new one. */
+export class RefTakenError extends Error {}
 
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+/* ---------- Supabase ---------- */
 
-const K = {
-  ids: "waitlist:ids",
-  entry: (id: string) => `waitlist:entry:${id}`,
-  email: (email: string) => `waitlist:email:${email}`,
-};
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-async function redis<T>(...command: (string | number)[]): Promise<T> {
-  const res = await fetch(REDIS_URL!, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify(command),
-    cache: "no-store",
+let client: SupabaseClient | undefined;
+function db() {
+  client ??= createClient(SUPABASE_URL!, SUPABASE_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
-  const data = (await res.json()) as { result?: T; error?: string };
-  if (!res.ok || data.error) throw new Error(`redis ${command[0]}: ${data.error ?? res.status}`);
-  return data.result as T;
+  return client;
 }
 
-const redisStore: Store = {
-  async add(entry) {
-    // Claim the email atomically so two concurrent signups can't both get in.
-    const claimed = await redis<string | null>("SET", K.email(entry.email), entry.id, "NX");
-    if (!claimed) {
-      const id = await redis<string>("GET", K.email(entry.email));
-      const existing = await redisStore.get(id);
-      const index = await redis<number | null>("LPOS", K.ids, id);
-      if (existing) return { entry: existing, position: (index ?? 0) + 1, returning: true };
-      // Claim left over from a half-finished signup: take it over.
-      await redis("SET", K.email(entry.email), entry.id);
+const supabaseStore: Store = {
+  async join(input) {
+    const { data, error } = await db().rpc("join_waitlist", {
+      p_name: input.name,
+      p_email: input.email,
+      p_ref: input.ref,
+      p_pain: input.pain,
+      p_other: input.other ?? null,
+      p_referred_by: input.referredBy ?? null,
+    });
+    if (error) {
+      if (error.code === "23505" && error.message.includes("waitlist_ref_key")) {
+        throw new RefTakenError(`referral code ${input.ref} already taken`);
+      }
+      throw new Error(`join_waitlist: ${error.code} ${error.message}`);
     }
-    await redisStore.save(entry);
-    const position = await redis<number>("RPUSH", K.ids, entry.id);
-    return { entry, position, returning: false };
+    return data as JoinResult;
   },
-  async get(id) {
-    const raw = await redis<string | null>("GET", K.entry(id));
-    return raw ? (JSON.parse(raw) as Entry) : null;
-  },
-  async save(entry) {
-    await redis("SET", K.entry(entry.id), JSON.stringify(entry));
+  async update(id, fields) {
+    const { data, error } = await db()
+      .from("waitlist")
+      .update({ together: fields.together, partner_open: fields.partnerOpen, loop: fields.loop })
+      .eq("id", id)
+      .select("id");
+    if (error) throw new Error(`waitlist update: ${error.code} ${error.message}`);
+    return data.length > 0;
   },
 };
 
 /* ---------- Local JSON file (dev only) ---------- */
 
+type FileEntry = JoinInput & FollowUp & { id: string; createdAt: string };
+
 const FILE = path.join(process.cwd(), ".data", "waitlist.json");
 
-async function readAll(): Promise<Entry[]> {
+async function readAll(): Promise<FileEntry[]> {
   try {
     return JSON.parse(await fs.readFile(FILE, "utf8"));
   } catch {
@@ -91,36 +91,37 @@ async function readAll(): Promise<Entry[]> {
   }
 }
 
-async function writeAll(entries: Entry[]) {
+async function writeAll(entries: FileEntry[]) {
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(entries, null, 2));
 }
 
 const fileStore: Store = {
-  async add(entry) {
+  async join(input) {
     const entries = await readAll();
-    const existing = entries.find((e) => e.email === entry.email);
-    if (existing) return { entry: existing, position: entries.indexOf(existing) + 1, returning: true };
+    const existing = entries.find((e) => e.email === input.email);
+    if (existing) {
+      return { id: existing.id, ref: existing.ref, position: entries.indexOf(existing) + 1, returning: true };
+    }
+    const entry: FileEntry = { ...input, id: randomUUID(), createdAt: new Date().toISOString() };
     entries.push(entry);
     await writeAll(entries);
-    return { entry, position: entries.length, returning: false };
+    return { id: entry.id, ref: entry.ref, position: entries.length, returning: false };
   },
-  async get(id) {
-    return (await readAll()).find((e) => e.id === id) ?? null;
-  },
-  async save(entry) {
+  async update(id, fields) {
     const entries = await readAll();
-    const i = entries.findIndex((e) => e.id === entry.id);
-    if (i === -1) entries.push(entry);
-    else entries[i] = entry;
+    const entry = entries.find((e) => e.id === id);
+    if (!entry) return false;
+    Object.assign(entry, Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined)));
     await writeAll(entries);
+    return true;
   },
 };
 
 export function getStore(): Store {
-  if (REDIS_URL && REDIS_TOKEN) return redisStore;
+  if (SUPABASE_URL && SUPABASE_KEY) return supabaseStore;
   if (process.env.VERCEL) {
-    throw new Error("waitlist: no Redis configured. Add Upstash Redis in Vercel → Storage.");
+    throw new Error("waitlist: Supabase not configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Vercel.");
   }
   return fileStore;
 }
