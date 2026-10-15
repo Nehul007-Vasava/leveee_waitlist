@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo /* , useState */ } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { PlayIcon } from "@phosphor-icons/react";
+// import { PlayIcon } from "@phosphor-icons/react"; // walkthrough card hidden
 import { VALIDATION, type PainKey } from "@/lib/content";
-import { Logo, VideoPoster } from "@/components/vectors";
+import { Logo /* , VideoPoster */ } from "@/components/vectors";
 import { SIGNUP_KEY } from "@/components/join/JoinProvider";
 import { useBrowserValue } from "@/lib/useBrowserValue";
-import { JumpTheQueue } from "./JumpTheQueue";
+// import { JumpTheQueue } from "./JumpTheQueue"; // "Want access sooner?" hidden
 
 export type Signup = { id: string; ref: string; position: number; name: string; pain: PainKey | null };
 
@@ -23,9 +23,11 @@ export function ThanksView() {
       return null;
     }
   }, [raw]);
-  const [moved, setMoved] = useState(0);
-  const position = signup?.position ? Math.max(1, signup.position - moved) : null;
-  const [videoNote, setVideoNote] = useState(false);
+  // Queue-jump perks are hidden, so the place in line is shown as stored.
+  // const [moved, setMoved] = useState(0);
+  // const position = signup?.position ? Math.max(1, signup.position - moved) : null;
+  const position = signup?.position ?? null;
+  // const [videoNote, setVideoNote] = useState(false);
 
   const fade = (delay: number) => ({
     initial: reduce ? false : { opacity: 0, y: 18 },
@@ -65,7 +67,8 @@ export function ThanksView() {
         </div>
       </motion.div>
 
-      <motion.div {...fade(0.25)} className="mt-6 grid gap-4 md:grid-cols-[0.75fr_1.25fr]">
+      {/* Was "mt-6 grid gap-4 md:grid-cols-[0.75fr_1.25fr]" with the walkthrough card beside it. */}
+      <motion.div {...fade(0.25)} className="mt-6 grid gap-4">
         <div className="flex flex-col justify-center rounded-[28px] bg-[linear-gradient(135deg,var(--calm-wash),var(--mist))] p-7">
           <span className="text-sm text-muted">Your place in line</span>
           <div className="my-1 text-[56px] leading-none font-semibold tracking-tight text-ink tabular-nums">
@@ -74,7 +77,8 @@ export function ThanksView() {
           <p className="text-[14.5px] text-body">We&apos;re opening the beta in small groups.</p>
         </div>
 
-        {/* REPLACE: swap this poster for the 2 to 3 minute prototype walkthrough embed */}
+        {/* Walkthrough card hidden until the video exists (it promised to email it).
+            REPLACE: swap this poster for the 2 to 3 minute prototype walkthrough embed
         <button
           type="button"
           onClick={() => setVideoNote(true)}
@@ -92,9 +96,13 @@ export function ThanksView() {
             </span>
           </span>
         </button>
+        */}
       </motion.div>
 
+      {/* "Want access sooner?" hidden: its move-up-in-line perks aren't implemented server-side.
+          Restoring it also brings back the invite link and Map your loop.
       <JumpTheQueue signup={signup} onMove={(n) => setMoved((m) => m + n)} />
+      */}
     </div>
   );
 }

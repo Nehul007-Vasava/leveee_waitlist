@@ -275,9 +275,10 @@ export function Footer({ note }: { note?: string }) {
           <span>{note}</span>
         ) : (
           <nav aria-label="Footer" className="flex gap-6">
-            {/* REPLACE with real policy pages before launch */}
+            {/* Hidden until real policy pages exist.
             <a href="#" className="hover:text-ink">Privacy</a>
             <a href="#" className="hover:text-ink">Terms</a>
+            */}
             <a href="mailto:hello@leveee.app" className="hover:text-ink">Contact</a>
           </nav>
         )}

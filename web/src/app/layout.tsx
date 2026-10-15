@@ -17,6 +17,14 @@ export const metadata: Metadata = {
     title: "Leveee | The fight isn't the problem. The ten seconds before it is.",
     description: "A private relationship companion for the moment your thumb is over send.",
     type: "website",
+    siteName: "Leveee",
+  },
+  // Share image comes from app/opengraph-image.png and app/twitter-image.png. On Vercel, Next.js
+  // resolves them against the production URL automatically, so no metadataBase is needed.
+  twitter: {
+    card: "summary_large_image",
+    title: "Leveee | The fight isn't the problem. The ten seconds before it is.",
+    description: "A private relationship companion for the moment your thumb is over send.",
   },
 };
 
