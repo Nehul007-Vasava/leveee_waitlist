@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/*
+  Leveee brand tokens (from docs/leveee_funnel_brand_colors.html)
+  - lilac (#5E5689) is the only action color: buttons you press. "anchor" is the same lilac, for brand accents
+  - calm (#9991be / #d7b9d5) is Leveee's voice: icons, reflective surfaces
+  - warm (#f4cae0) is reserved for warmth moments: founder, closing, success
+  - rose (#C0727C) means heat, used sparingly
+*/
+:root {
+  --linen: #f7f5f0;
+  --paper: #ffffff;
+  --sand: #eeeae2;
+  --rule: #e3ded4;
+  --ink: #2b2536;
+  --body: #4a4f5e;
+  --muted: #6f7584;
+  --anchor: #5e5689;
+  --anchor-deep: #2b2536;
+  --anchor-wash: rgba(94, 86, 137, 0.08);
+  --btn: #5e5689;
+  --btn-hover: #4e4775;
+  --btn-fg: #ffffff;
+  --calm: #9991be;
+  --calm-2: #d7b9d5;
+  --calm-text: #6b6396;
+  --calm-wash: rgba(215, 185, 213, 0.32);
+  --warm: #f4cae0;
+  --warm-wash: rgba(244, 202, 224, 0.42);
+  --rose: #c0727c;
+  --rose-text: #9a5a63;
+  --rose-wash: rgba(192, 114, 124, 0.1);
+  --mist: #e8e7f1;
+  --shadow-tint: 43 37 54;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-linen: var(--linen);
+  --color-paper: var(--paper);
+  --color-sand: var(--sand);
+  --color-rule: var(--rule);
+  --color-ink: var(--ink);
+  --color-body: var(--body);
+  --color-muted: var(--muted);
+  --color-btn: var(--btn);
+  --color-btn-hover: var(--btn-hover);
+  --color-btn-fg: var(--btn-fg);
+  --color-calm: var(--calm);
+  --color-calm-2: var(--calm-2);
+  --color-calm-text: var(--calm-text);
+  --color-calm-wash: var(--calm-wash);
+  --color-warm: var(--warm);
+  --color-warm-wash: var(--warm-wash);
+  --color-rose: var(--rose);
+  --color-rose-text: var(--rose-text);
+  --color-rose-wash: var(--rose-wash);
+  --color-mist: var(--mist);
+  --color-anchor: var(--anchor);
+  --color-anchor-deep: var(--anchor-deep);
+  --color-anchor-wash: var(--anchor-wash);
+  --font-sans: var(--font-sans-face);
+  --shadow-soft: 0 1px 2px rgb(var(--shadow-tint) / 0.05), 0 18px 40px rgb(var(--shadow-tint) / 0.07);
+  --shadow-lift: 0 1px 2px rgb(var(--shadow-tint) / 0.05), 0 30px 60px rgb(var(--shadow-tint) / 0.12);
+  --ease-calm: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+}
+
+body {
+  background: var(--linen);
+  color: var(--body);
+  font-family: var(--font-sans-face), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--calm);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+::selection {
+  background: var(--calm-2);
+  color: var(--ink);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.94); opacity: 0.55; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(12px, -16px, 0) scale(1.04); }
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(0.8); }
+  50% { transform: scale(1.6); }
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.anim-breathe { animation: breathe 8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.anim-drift { animation: drift 14s ease-in-out infinite; }
+.anim-pulse-dot { animation: pulse-dot 3.2s ease-in-out infinite; }
+.anim-blink { animation: blink 1s steps(1) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Grain overlay: fixed and non-interactive so it never repaints on scroll */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
