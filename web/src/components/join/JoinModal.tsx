@@ -40,6 +40,7 @@ export function JoinModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [other, setOther] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot: hidden from people, filled by bots
   const [together, setTogether] = useState<string | null>(null);
   const [partnerOpen, setPartnerOpen] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -93,7 +94,7 @@ export function JoinModal({ open, onClose }: { open: boolean; onClose: () => voi
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, pain, other, referredBy }),
+        body: JSON.stringify({ name, email, pain, other, referredBy, website }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
@@ -277,6 +278,17 @@ export function JoinModal({ open, onClose }: { open: boolean; onClose: () => voi
                         onChange={(e) => setEmail(e.target.value)}
                         className="h-12 rounded-2xl border border-rule bg-linen px-4 text-base text-ink placeholder:text-muted focus:border-calm focus:bg-paper focus:outline-none"
                         placeholder="you@example.com"
+                      />
+                    </div>
+                    <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+                      <label htmlFor="join-website">Website</label>
+                      <input
+                        id="join-website"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
                       />
                     </div>
                   </div>

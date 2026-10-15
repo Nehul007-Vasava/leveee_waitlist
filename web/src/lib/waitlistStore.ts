@@ -1,7 +1,7 @@
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /*
@@ -20,6 +20,8 @@ export type JoinInput = {
   pain: string | null;
   other?: string;
   referredBy?: string;
+  /** Client IP, used only for rate limiting. Stored as a keyed hash, never raw. */
+  ip?: string;
 };
 
 export type JoinResult = { id: string; ref: string; position: number; returning: boolean };
@@ -34,6 +36,13 @@ type Store = {
 
 /** Thrown when the generated referral code is already taken; the caller retries with a new one. */
 export class RefTakenError extends Error {}
+
+/** Thrown when one network has made too many join attempts recently. */
+export class RateLimitedError extends Error {}
+
+// Signup attempts allowed per network per window. Generous enough for a household or office on one IP.
+const RATE_LIMIT = 10;
+const RATE_WINDOW = "10 minutes";
 
 /* ---------- Supabase ---------- */
 
@@ -57,6 +66,9 @@ const supabaseStore: Store = {
       p_pain: input.pain,
       p_other: input.other ?? null,
       p_referred_by: input.referredBy ?? null,
+      p_ip_hash: input.ip ? createHmac("sha256", SUPABASE_KEY!).update(input.ip).digest("hex") : null,
+      p_limit: RATE_LIMIT,
+      p_window: RATE_WINDOW,
     });
     if (error) {
       if (error.code === "23505" && error.message.includes("waitlist_ref_key")) {
@@ -64,6 +76,7 @@ const supabaseStore: Store = {
       }
       throw new Error(`join_waitlist: ${error.code} ${error.message}`);
     }
+    if (data?.rate_limited) throw new RateLimitedError("too many join attempts from this network");
     return data as JoinResult;
   },
   async update(id, fields) {
@@ -103,7 +116,7 @@ const fileStore: Store = {
     if (existing) {
       return { id: existing.id, ref: existing.ref, position: entries.indexOf(existing) + 1, returning: true };
     }
-    const entry: FileEntry = { ...input, id: randomUUID(), createdAt: new Date().toISOString() };
+    const entry: FileEntry = { ...input, ip: undefined, id: randomUUID(), createdAt: new Date().toISOString() };
     entries.push(entry);
     await writeAll(entries);
     return { id: entry.id, ref: entry.ref, position: entries.length, returning: false };

@@ -31,9 +31,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-1. **Create the database.** In a Supabase project, open **SQL Editor** and run
-   `supabase/migrations/20261015000000_create_waitlist.sql` (or `supabase db push` with the CLI).
-   It creates the `waitlist` table with row-level security on and no public access.
+1. **Create the database.** In a Supabase project, open **SQL Editor** and run each file in
+   `supabase/migrations/` in filename order (or `supabase db push` with the CLI). This creates the
+   `waitlist` table and the per-network rate limit, with row-level security on and no public access.
 2. **Import the repo in Vercel** and set **Root Directory** to `web`.
 3. **Set environment variables** (Production and Preview):
    - `SUPABASE_URL`: Project Settings → Data API
@@ -41,6 +41,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
      The legacy `SUPABASE_SERVICE_ROLE_KEY` also works. Keep it server-only: never `NEXT_PUBLIC_`.
    - Optional: `NEXT_PUBLIC_FOUNDER_CALL_URL`, `NEXT_PUBLIC_HELPLINE_URL`. See `.env.example`.
 4. **Deploy.** Without the Supabase variables, signups fail on Vercel with a visible error.
+
+**Spam protection:** a hidden honeypot field drops form-filling bots without saving them, and each
+network (IP) gets 10 join attempts per 10 minutes, enforced in Postgres so it holds across all serverless
+instances. Only a keyed hash of the IP is stored, and attempts older than a day are pruned. Tune
+`RATE_LIMIT` / `RATE_WINDOW` in `src/lib/waitlistStore.ts`.
 
 Signups show up in Supabase → **Table Editor → waitlist**, where you can filter and export to CSV.
 `position` (place in line) is the row's rank by `seq`. Locally, with no Supabase variables set,
