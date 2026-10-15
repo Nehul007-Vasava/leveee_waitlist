@@ -46,7 +46,11 @@ const RATE_WINDOW = "10 minutes";
 
 /* ---------- Supabase ---------- */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Accept the URL as pasted from any Supabase screen: trailing slash or a /rest/v1 suffix both break the client.
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)
+  ?.trim()
+  .replace(/\/+$/, "")
+  .replace(/\/rest\/v1$/, "");
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let client: SupabaseClient | undefined;
