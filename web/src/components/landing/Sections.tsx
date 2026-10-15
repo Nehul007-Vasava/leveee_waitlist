@@ -1,7 +1,8 @@
-import { CheckIcon, MinusIcon, PlusIcon, LockIcon, ArrowUpRightIcon, LockKeyIcon, ProhibitIcon, UserFocusIcon } from "@phosphor-icons/react/ssr";
+import { CheckIcon, MinusIcon, PlusIcon, LockIcon, LockKeyIcon, ProhibitIcon, UserFocusIcon } from "@phosphor-icons/react/ssr";
+// Helpline link hidden for now. To restore, add ArrowUpRightIcon above and uncomment the next line.
 import { JoinButton } from "@/components/join/JoinButton";
 import { Reveal } from "@/components/Reveal";
-import { HELPLINE_URL } from "@/lib/content";
+// import { HELPLINE_URL } from "@/lib/content";
 import {
   FounderMark,
   Logo,
@@ -163,7 +164,8 @@ export function Trust() {
                 <b className="font-semibold text-ink">If you ever feel unsafe with your partner, an app isn&apos;t the answer.</b>{" "}
                 Please reach out to a local helpline or someone you trust. Leveee won&apos;t suggest ways to de-escalate someone who hurts you.
               </p>
-              {/* REPLACE with a helpline relevant to your launch markets (NEXT_PUBLIC_HELPLINE_URL) */}
+              {/* Helpline link hidden for now. When restoring, point NEXT_PUBLIC_HELPLINE_URL at a helpline
+                  for your launch markets and restore the imports at the top of this file.
               <a
                 href={HELPLINE_URL}
                 target="_blank"
@@ -172,6 +174,7 @@ export function Trust() {
               >
                 Find a helpline <ArrowUpRightIcon size={14} />
               </a>
+              */}
             </div>
           </Reveal>
         </div>

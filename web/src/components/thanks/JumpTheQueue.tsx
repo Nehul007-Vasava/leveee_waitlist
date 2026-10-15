@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CheckIcon, CopyIcon, GiftIcon, MapTrifoldIcon, PhoneIcon, ShareNetworkIcon, UserPlusIcon } from "@phosphor-icons/react";
-import { FOUNDER_CALL_URL, LOOP_QUESTIONS, loopSnapshot } from "@/lib/content";
+import { /* FOUNDER_CALL_URL, */ LOOP_QUESTIONS, loopSnapshot } from "@/lib/content";
 import { useBrowserValue } from "@/lib/useBrowserValue";
 import type { Signup } from "./ThanksView";
 
@@ -15,6 +15,8 @@ export function JumpTheQueue({ signup, onMove }: { signup: Signup | null; onMove
 
       <div className="mt-10 grid gap-4">
         <LoopMap signup={signup} onDone={() => onMove(50)} />
+        {/* Founder call hidden for now. To restore, set NEXT_PUBLIC_FOUNDER_CALL_URL, uncomment the
+            FOUNDER_CALL_URL import above, and uncomment this row.
         <Row
           Icon={PhoneIcon}
           title="Talk to the founder"
@@ -30,6 +32,7 @@ export function JumpTheQueue({ signup, onMove }: { signup: Signup | null; onMove
             Book a call
           </a>
         </Row>
+        */}
         <Invite signup={signup} />
       </div>
     </section>
